@@ -1,0 +1,3 @@
+name: claude-4.5-haiku-none
+model: anthropic/claude-haiku-4.5
+parameters: {}

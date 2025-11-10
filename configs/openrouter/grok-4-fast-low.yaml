@@ -1,0 +1,6 @@
+name: grok-4-fast-low
+model: x-ai/grok-4-fast
+parameters:
+  reasoning:
+    enabled: true
+    effort: low
