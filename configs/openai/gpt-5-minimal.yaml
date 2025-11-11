@@ -1,0 +1,5 @@
+name: gpt-5-minimal
+model: openai/gpt-5
+parameters:
+  reasoning:
+    effort: minimal

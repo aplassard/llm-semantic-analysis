@@ -1,0 +1,5 @@
+name: gemini-2.5-flash-lite-high
+model: google/gemini-2.5-flash-lite
+parameters:
+  reasoning:
+    effort: high

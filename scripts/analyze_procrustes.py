@@ -73,15 +73,18 @@ def build_distance_matrix(models: List[Dict[str, np.ndarray]], labels: List[str]
     return matrix
 
 
-def print_closest_pairs(matrix: np.ndarray, labels: List[str], topk: int) -> List[Tuple[float, str, str]]:
+def enumerate_pairs(matrix: np.ndarray, labels: List[str]) -> List[Tuple[float, str, str]]:
     triples: List[Tuple[float, str, str]] = []
     for i, j in itertools.combinations(range(len(labels)), 2):
         triples.append((matrix[i, j], labels[i], labels[j]))
     triples.sort(key=lambda x: x[0])
+    return triples
+
+
+def print_closest_pairs(triples: List[Tuple[float, str, str]], topk: int) -> None:
     print("\n=== Closest pairs ===")
     for d, a, b in triples[:topk]:
         print(f"{a} ↔ {b}  disparity={d:.6f}")
-    return triples
 
 
 def analyze_unknown(matrix: np.ndarray, labels: List[str], unknown_label: str) -> None:
@@ -138,6 +141,7 @@ def main() -> None:
     parser.add_argument("--pca-dim", type=int, default=0, help="Optional PCA dimension (0 = none).")
     parser.add_argument("--topk", type=int, default=10, help="Number of closest pairs to print.")
     parser.add_argument("--heatmap", type=Path, help="Optional path to save a heatmap image.")
+    parser.add_argument("--csv", type=Path, help="Optional path to write pairwise disparities as CSV.")
     args = parser.parse_args()
 
     paths: List[Path] = list(dict.fromkeys(args.inputs))  # preserve order, drop duplicates
@@ -155,8 +159,17 @@ def main() -> None:
 
     matrix = build_distance_matrix(models, labels, pca_dim=args.pca_dim)
     print(f"Loaded {len(labels)} embedding sets.")
-    print_closest_pairs(matrix, labels, args.topk)
+    triples = enumerate_pairs(matrix, labels)
+    print_closest_pairs(triples, args.topk)
     analyze_unknown(matrix, labels, unknown_label=args.unknown.stem)
+
+    if args.csv:
+        df = pd.DataFrame(
+            [(a, b, d) for d, a, b in triples],
+            columns=["model_a", "model_b", "disparity"],
+        )
+        df.to_csv(args.csv, index=False)
+        print(f"Wrote CSV to {args.csv}")
 
     if args.heatmap:
         plot_heatmap(matrix, labels, args.heatmap)

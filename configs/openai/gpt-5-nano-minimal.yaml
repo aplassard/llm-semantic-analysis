@@ -1,0 +1,5 @@
+name: gpt-5-nano-minimal
+model: openai/gpt-5-nano
+parameters:
+  reasoning:
+    effort: minimal

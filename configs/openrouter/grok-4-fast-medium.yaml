@@ -1,6 +1,0 @@
-name: grok-4-fast-medium
-model: x-ai/grok-4-fast
-parameters:
-  reasoning:
-    enabled: true
-    effort: medium

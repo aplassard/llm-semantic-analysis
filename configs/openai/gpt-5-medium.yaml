@@ -1,0 +1,5 @@
+name: gpt-5-medium
+model: openai/gpt-5
+parameters:
+  reasoning:
+    effort: medium

@@ -1,0 +1,3 @@
+name: gemini-2.5-flash-lite-none
+model: google/gemini-2.5-flash-lite
+parameters: {}
