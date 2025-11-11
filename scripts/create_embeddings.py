@@ -76,9 +76,9 @@ def extract_response_text(record: Dict[str, Any]) -> Optional[str]:
 
 
 def default_output_path(input_path: Path) -> Path:
-    embeddings_dir = Path("embeddings")
-    embeddings_dir.mkdir(parents=True, exist_ok=True)
-    return embeddings_dir / (input_path.stem + ".parquet")
+    output_dir = Path("embeddings")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir / f"{input_path.stem}.parquet"
 
 
 def process_file(
@@ -114,9 +114,8 @@ def process_file(
         raise ValueError(f"No rows with usable responses found in {input_path}")
 
     embeddings = model.encode(texts, batch_size=batch_size, convert_to_numpy=True, show_progress_bar=True)
-
-    for row, embedding in zip(rows, embeddings):
-        row["embedding"] = embedding.tolist()
+    for row, vector in zip(rows, embeddings):
+        row["embedding"] = vector.tolist()
 
     df = pd.DataFrame(rows)
     df.to_parquet(output_path, index=False)

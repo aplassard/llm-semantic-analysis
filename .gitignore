@@ -206,7 +206,9 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Generated run outputs
+# Generated artifacts
 outputs/
-results/
 embeddings/
+*.png
+results/
+
