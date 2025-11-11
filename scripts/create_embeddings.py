@@ -15,32 +15,37 @@ from sentence_transformers import SentenceTransformer
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate embeddings from an LLM results JSONL file.")
     parser.add_argument("--input", type=Path, help="Path to a results JSONL file.")
-    parser.add_argument("--inputs", type=Path, nargs="+", help="One or more results JSONL files.")
+    parser.add_argument(
+        "--inputs",
+        type=Path,
+        nargs="+",
+        help="One or more results JSONL files. Overrides --input when provided.",
+    )
     parser.add_argument(
         "--output",
         type=Path,
-        help="Path to a specific embeddings parquet. Defaults to embeddings/<input_basename>.parquet",
+        help="Path to the embeddings parquet file. Defaults to embeddings/<input_basename>.parquet",
     )
     parser.add_argument("--batch-size", type=int, default=32, help="Batch size for embedding inference.")
-    parser.add_argument("--device", default="cpu", help="Device for the embedding model (e.g. cpu, cuda).")
-    parser.add_argument("--force", action="store_true", help="Overwrite existing parquet files.")
+    parser.add_argument("--device", default="cpu", help="Device to run the embedding model on (e.g. cpu, cuda).")
+    parser.add_argument("--force", action="store_true", help="Recompute embeddings even if the output exists.")
     return parser.parse_args()
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
+    items: List[Dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as handle:
-        for line_no, line in enumerate(handle, start=1):
-            line = line.strip()
-            if not line:
+        for line_no, raw_line in enumerate(handle, start=1):
+            raw_line = raw_line.strip()
+            if not raw_line:
                 continue
             try:
-                rows.append(json.loads(line))
+                items.append(json.loads(raw_line))
             except json.JSONDecodeError as exc:
                 raise ValueError(f"Invalid JSON on line {line_no} in {path}") from exc
-    if not rows:
+    if not items:
         raise ValueError(f"No records found in {path}")
-    return rows
+    return items
 
 
 def extract_response_text(record: Dict[str, Any]) -> Optional[str]:
@@ -52,10 +57,12 @@ def extract_response_text(record: Dict[str, Any]) -> Optional[str]:
     if not response:
         return None
 
+    # Some providers place text under response["output_text"]
     text = response.get("output_text")
     if text:
         return text
 
+    # Fall back to walking the output list
     for output in response.get("output", []) or []:
         if output.get("type") == "message":
             for content in output.get("content", []) or []:
@@ -118,6 +125,7 @@ def process_file(
 def main() -> None:
     args = parse_args()
 
+    input_paths: List[Path]
     if args.inputs:
         input_paths = list(args.inputs)
     elif args.input:
@@ -126,7 +134,7 @@ def main() -> None:
         raise SystemExit("Please provide --input or --inputs.")
 
     if len(input_paths) > 1 and args.output:
-        raise SystemExit("Cannot use --output with multiple inputs.")
+        raise SystemExit("Cannot use --output with multiple input files.")
 
     model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B", device=args.device)
 
@@ -135,6 +143,7 @@ def main() -> None:
         if output_path.exists() and not args.force:
             print(f"Skipping {path}: {output_path} already exists (use --force to overwrite).")
             continue
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             process_file(path, output_path, model, args.batch_size)
         except ValueError as exc:

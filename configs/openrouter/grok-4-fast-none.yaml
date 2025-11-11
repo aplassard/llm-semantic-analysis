@@ -1,0 +1,5 @@
+name: grok-4-fast-none
+model: x-ai/grok-4-fast
+parameters:
+  reasoning:
+    enabled: false

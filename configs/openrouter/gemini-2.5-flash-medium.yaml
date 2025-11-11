@@ -1,0 +1,5 @@
+name: gemini-2.5-flash-medium
+model: google/gemini-2.5-flash
+parameters:
+  reasoning:
+    effort: medium
